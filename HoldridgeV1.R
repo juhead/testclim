@@ -50,11 +50,11 @@ plot(precip[[11]], range = c(0, 1000), main = "Nov")
 plot(precip[[12]], range = c(0, 1000), main = "Dec")
 
 # testing out macroBiome package function 
-plot1 <- cliHoldridgeGrid(rs.temp = temp, rs.prec = precip)
+result1 <- cliHoldridgeGrid(rs.temp = temp, rs.prec = precip)
+plot(result1)
 
 # Dataframe within the package with the labels and number codes
 codes <- vegClsNumCodes
-
 # simplifying codes to a lookup table
 lookup <- data.frame(
   ID    = seq_len(nrow(codes)),
@@ -62,17 +62,15 @@ lookup <- data.frame(
 )
 
 # making the original output categorical and setting the labels 
-plot2 <- as.factor(plot1)
-levels(plot2) <- lookup
-plot(plot2)
+classified <- as.factor(result1)
+levels(classified) <- lookup
 
 # creating a discrete color palette 
-n <- nrow(cats(plot2)[[1]])
+n <- nrow(cats(classified)[[1]])
 cols <- hcl.colors(n, palette = "Dark 3")
 
 # Plotting the improved result 
-plot(plot2,
+plot(classified,
      col    = cols,
      plg    = list(cex = 0.6, bg = "white"), 
      mar    = c(3, 3, 1, 1))
-
