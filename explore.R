@@ -7,8 +7,8 @@ library(terra)
 library(macroBiome)
 
 # LEGACY DATA USED HERE
-temp_leg <- list.files("/Users/juliahead/Desktop/ClimWork/data_raw/legacy_climatology/air_temperature/mean/mean_monthly/statewide", pattern = "\\.tif$", full.names = TRUE)
-precip_leg <- list.files("/Users/juliahead/Desktop/ClimWork/data_raw/legacy_climatology/rainfall/mean_monthly/statewide", pattern = "\\.tif$", full.names = TRUE)
+temp_leg <- list.files("/Users/juliahead/Desktop/ClimWork/code/testclim/data_raw/legacy_mean_monthly_air_temperature", pattern = "\\.tif$", full.names = TRUE)
+precip_leg <- list.files("/Users/juliahead/Desktop/ClimWork/code/testclim/data_raw/legacy_mean_monthly_rainfall", pattern = "\\.tif$", full.names = TRUE)
 
 temp <- rast(temp_leg)
 precip <- rast(precip_leg)
