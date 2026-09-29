@@ -74,3 +74,7 @@ plot(classified,
      col    = cols,
      plg    = list(cex = 0.6, bg = "white"), 
      mar    = c(3, 3, 1, 1))
+
+#export holdridge classifications for Hawaii
+#writeRaster(classified, "historical_holdridge_hawaii.tiff")
+#output_data folder was created after and it was moved 
