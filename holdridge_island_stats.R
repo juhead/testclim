@@ -4,14 +4,14 @@ install.packages("terra")
 install.packages("tidyr")
 install.packages("dplyr")
 install.packages("exactextractr")
-install.packages("geospatialsuite")
+install.packages("macroBiome")
 
 library(sf)
 library(terra)
 library(dplyr)
 library(tidyr)
 library(exactextractr)
-library(geospatialsuite)
+library(macroBiome)
 
 #import holdridge classification created for hawaii created previously 
 hold_class <- rast("output_data/historical_holdridge_hawaii.tiff")
@@ -33,19 +33,22 @@ islands <- read_sf("data_raw/Coastline.geojson")
 crs(hold_class, describe = TRUE)
 st_crs(islands)
 
-#currently both are in WGS 84 might change later 
-island_data <- universal_spatial_join(
-  source_data = islands,
-  target_data = hold_class,
-  method = "auto",
-  verbose = TRUE
+#calculate area covered by the different zones by the island 
+island_zones <- exact_extract(hold_class, islands, function(df) {
+  df |>
+    group_by(value, isle) |>
+    summarise(area = sum(coverage_area))
+}, coverage_area = TRUE, include_cols = "isle", summarize_df = TRUE)
+
+island_zones <- island_zones %>% mutate(area = area / 1e6)
+
+#get codes from macroBiome
+codes <- vegClsNumCodes
+
+lookup <- data.frame(
+  ID    = seq_len(nrow(codes)),
+  label = codes$Name.HLZ      
 )
 
-Kauai <- islands %>% filter(isle == "Kauai")
-
-kauai_hold <- crop(hold_class, Kauai, mask = TRUE)
-
-plot(kauai_hold,
-     col    = cols,
-     plg    = list(cex = 0.6, bg = "white"), 
-     mar    = c(3, 3, 1, 1))
+#assign names of zones to table 
+island_zones <- left_join(island_zones, lookup, by = c("value" = "ID"))
