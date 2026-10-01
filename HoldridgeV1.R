@@ -11,7 +11,9 @@ temp_leg <- list.files("data_raw/legacy_mean_monthly_air_temperature", pattern =
 precip_leg <- list.files("data_raw/legacy_mean_monthly_rainfall", pattern = "\\.tif$", full.names = TRUE)
 
 temp <- rast(temp_leg)
-precip <- rast(precip_leg)
+precip <- rast(precip_leg) 
+
+################### data exploration - skip for classification ########
 
 # sanity checks 
 nlyr(temp) # checks number of layers
@@ -49,7 +51,9 @@ plot(precip[[10]], range = c(0, 1000), main = "Oct")
 plot(precip[[11]], range = c(0, 1000), main = "Nov")
 plot(precip[[12]], range = c(0, 1000), main = "Dec")
 
-# testing out macroBiome package function 
+#######################################################################
+
+# macroBiome package Holdridge Life Zones function 
 result1 <- cliHoldridgeGrid(rs.temp = temp, rs.prec = precip)
 plot(result1)
 
@@ -71,6 +75,6 @@ cols <- hcl.colors(n, palette = "Dark 3")
 
 # Plotting the improved result 
 plot(classified,
-     col    = cols,
-     plg    = list(cex = 0.6, bg = "white"), 
-     mar    = c(3, 3, 1, 1))
+     col = cols,
+     plg = list(cex = 0.6, bg = "white", ncol = 2),
+     mar = c(2, 2, 1, 12))
