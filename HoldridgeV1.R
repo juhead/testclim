@@ -75,6 +75,12 @@ cols <- hcl.colors(n, palette = "Dark 3")
 
 # Plotting the improved result 
 plot(classified,
-     col = cols,
-     plg = list(cex = 0.6, bg = "white", ncol = 2),
-     mar = c(2, 2, 1, 12))
+     col    = cols,
+     plg    = list(cex = 0.6, bg = "white"), 
+     mar    = c(3, 3, 1, 1))
+
+
+
+#export holdridge classifications for Hawaii
+#writeRaster(classified, "historical_holdridge_hawaii.tiff")
+#output_data folder was created after and it was moved 
