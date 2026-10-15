@@ -1,7 +1,7 @@
 ## This script is for downloading and exploring packages and importing tifs
 
-install.packages("terra")
-install.packages("macroBiome")
+# install.packages("terra")
+# install.packages("macroBiome")
 
 library(terra)
 library(macroBiome)
@@ -82,5 +82,41 @@ plot(classified,
 
 
 #export holdridge classifications for Hawaii
-#writeRaster(classified, "historical_holdridge_hawaii.tiff")
+
+
 #output_data folder was created after and it was moved 
+
+####################################################################
+#Contemporary Data used here 
+
+temp_con <- list.files("data_raw/contemporary_mean_monthly_air_temperature", pattern = "\\.tif$", full.names = TRUE)
+precip_con <- list.files("data_raw/contemporary_mean_monthly_rainfall", pattern = "\\.tif$", full.names = TRUE)
+
+temp2 <- rast(temp_con)
+precip2 <- rast(precip_con) 
+
+###
+result1_con <- cliHoldridgeGrid(rs.temp = temp2, rs.prec = precip2)
+plot(result1_con)
+
+# Dataframe within the package with the labels and number codes
+codes <- vegClsNumCodes
+# simplifying codes to a lookup table
+lookup <- data.frame(
+  ID    = seq_len(nrow(codes)),
+  label = codes$Name.HLZ      
+)
+
+classified2 <- as.factor(result1_con)
+levels(classified2) <- lookup
+
+n <- nrow(cats(classified2)[[1]])
+cols <- hcl.colors(n, palette = "Dark 3")
+
+plot(classified2,
+     col    = cols,
+     plg    = list(cex = 0.6, bg = "white"), 
+     mar    = c(3, 3, 1, 1))
+
+writeRaster(classified2, "output_data/contemporary_holdridge_hawaii.tiff")
+
