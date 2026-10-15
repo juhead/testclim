@@ -76,8 +76,8 @@ cols <- hcl.colors(n, palette = "Dark 3")
 # Plotting the improved result 
 plot(classified,
      col    = cols,
-     plg    = list(cex = 0.6, bg = "white"), 
-     mar    = c(3, 3, 1, 1))
+     plg    = list(cex = 0.6, bg = "white", ncol = 2), 
+     mar    = c(3, 3, 1, 14))
 
 
 
@@ -115,8 +115,7 @@ cols <- hcl.colors(n, palette = "Dark 3")
 
 plot(classified2,
      col    = cols,
-     plg    = list(cex = 0.6, bg = "white"), 
-     mar    = c(3, 3, 1, 1))
+     plg    = list(cex = 0.6, bg = "white", ncol = 2), 
+     mar    = c(3, 3, 1, 14))
 
-writeRaster(classified2, "output_data/contemporary_holdridge_hawaii.tiff")
 
