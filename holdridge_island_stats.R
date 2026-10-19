@@ -8,6 +8,7 @@ install.packages("macroBiome")
 install.packages("ggplot2")
 install.packages("tidyterra")
 install.packages("purrr")
+install.packages("paletteer")
 
 library(sf)
 library(terra)
@@ -18,6 +19,7 @@ library(macroBiome)
 library(ggplot2)
 library(tidyterra)
 library(purrr)
+library(paletteer)
 
 #import holdridge classification created for hawaii created previously 
 hold_class <- rast("output_data/historical_holdridge_hawaii.tiff")
@@ -35,7 +37,12 @@ plot(hold_class,
 #import island boundaries 
 islands <- read_sf("data_raw/dems_coast/dems/coast/coast_geo_shp.shp")
 
-plot(st_geometry(islands))
+ggplot(islands) +
+  geom_sf(aes(fill = factor(COAST_GEO_))) +
+  labs(
+    fill = "Island ID",
+  ) +
+  scale_fill_paletteer_d("MetBrewer::Signac")
 #check the coordinate reference systems for both 
 crs(hold_class, describe = TRUE)
 st_crs(islands)
@@ -140,9 +147,29 @@ plots_pie <- imap(split_island_zones, function(df, id) {
 
 plots_pie[[2]]
 
-iwalk(plots_pie, function(p, id) {
-  ggsave(paste0("island_", id, ".png"), p, width = 6, height = 4, dpi = 300)
-})
+#used to export piecharts relating to distribution of Holdridge classifications
+#iwalk(plots_pie, function(p, id) {
+#  ggsave(paste0("island_", id, ".png"), p, width = 6, height = 4, dpi = 300)
+#})
+
+#adding in revised island data 
+islands_new <- read_sf("data_raw/hawaii_coastline_shp/coast_hawaii.shp")
+
+hold_islands <- exact_extract(
+  hold_class_NAD83, islands_new,
+  function(df) {
+    df |>
+      filter(!is.na(value)) |>
+      group_by(value, Name, Area_sq_km) |>
+      summarise(area = (sum(coverage_area) / 1e6), .groups = "drop") |>
+      mutate(pct_island = 100 * (area  / Area_sq_km))
+  },
+  coverage_area = TRUE,
+  include_cols = c("Name", "Area_sq_km"),
+  summarize_df = TRUE
+)
+
+
 
 
 
