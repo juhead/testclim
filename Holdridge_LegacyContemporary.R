@@ -6,6 +6,8 @@
 library(terra)
 library(macroBiome)
 
+########################### Loading data ########################
+
 # loading in list of legacy tiffs
 temps_12_leg <- list.files("data_raw/legacy_mean_monthly_air_temperature", pattern = "\\.tif$", full.names = TRUE)
 precips_12_leg <- list.files("data_raw/legacy_mean_monthly_rainfall", pattern = "\\.tif$", full.names = TRUE)
@@ -35,7 +37,7 @@ global(precip_leg, range, na.rm = TRUE) # precip rainge in mm
 global(temp_con, range, na.rm = TRUE)
 global(precip_con, range, na.rm = TRUE)
 
-#######################################################################
+######################## USING CLASSIFICATION FUNCTION #####################
 
 # LEGACY - macroBiome package Holdridge Life Zones function 
 result1_leg <- cliHoldridgeGrid(rs.temp = temp_leg, rs.prec = precip_leg)
@@ -45,7 +47,7 @@ plot(result1_leg) # result without class labels
 result1_con <- cliHoldridgeGrid(rs.temp = temp_con, rs.prec = precip_con)
 plot(result1_con) # result without named classes
 
-############# Fixing classification and color-code alignment 
+################# Assigning class name and colors to codes ###########
 
 codes  <- vegClsNumCodes
 lookup <- data.frame(ID = seq_len(nrow(codes)), label = codes$Name.HLZ)
@@ -66,6 +68,8 @@ make_hlz <- function(result) {
 classified_leg  <- make_hlz(result1_leg)      
 classified_con <- make_hlz(result1_con)  
 
+####################### PLOTTING ##########################
+
 plot(classified_leg,
      plg = list(cex = 0.6, bg = "white", ncol = 2),
      mar = c(3, 3, 1, 14))
@@ -73,6 +77,8 @@ plot(classified_leg,
 plot(classified_con,
      plg = list(cex = 0.6, bg = "white", ncol = 2),
      mar = c(3, 3, 1, 14))
+
+############################# Saving Plots ##############################
 
    save_hlz_plot <- function(r, file) {
   png(file,
@@ -86,5 +92,12 @@ plot(classified_con,
   dev.off()
 }
 
-save_hlz_plot(classified_leg,  "holdridge_legacy_map.png")
-save_hlz_plot(classified_con, "holdridge_contemporary_map.png")
+save_hlz_plot(classified_leg,  "output_maps/holdridge_legacy_map.png")
+save_hlz_plot(classified_con, "output_maps/holdridge_contemporary_map.png")
+
+########################### Saving Tiffs ################################
+
+writeRaster(result1_leg, "output_data/holdridge_legacy.tif",
+            datatype = "INT1U", NAflag = 255, overwrite = TRUE)
+writeRaster(result1_con, "output_data/holdridge_contemporary.tif",
+            datatype = "INT1U", NAflag = 255, overwrite = TRUE)
