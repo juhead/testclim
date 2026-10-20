@@ -3,3 +3,6 @@
 .RData
 .Ruserdata
 data_raw/dems_coast/dems/
+
+.DS_Store
+data_raw/Thrasher_etal_Projections/

@@ -1,121 +1,90 @@
-## This script is for downloading and exploring packages and importing tifs
+## This script uses the packages terra and macroBiome to classify Hawaii climate 
+## zones using legacy and contemporary climate data.  
 
 # install.packages("terra")
 # install.packages("macroBiome")
-
 library(terra)
 library(macroBiome)
 
-# LEGACY DATA USED HERE
-temp_leg <- list.files("data_raw/legacy_mean_monthly_air_temperature", pattern = "\\.tif$", full.names = TRUE)
-precip_leg <- list.files("data_raw/legacy_mean_monthly_rainfall", pattern = "\\.tif$", full.names = TRUE)
+# loading in list of legacy tiffs
+temps_12_leg <- list.files("data_raw/legacy_mean_monthly_air_temperature", pattern = "\\.tif$", full.names = TRUE)
+precips_12_leg <- list.files("data_raw/legacy_mean_monthly_rainfall", pattern = "\\.tif$", full.names = TRUE)
+# stacking monthly tiffs into annual legacy raster stack
+temp_leg <- rast(temps_12_leg)
+precip_leg <- rast(precips_12_leg) 
 
-temp <- rast(temp_leg)
-precip <- rast(precip_leg) 
+
+# laading in list of contemporary tiffs 
+temps_12_con <- list.files("data_raw/contemporary_mean_monthly_air_temperature", pattern = "\\.tif$", full.names = TRUE)
+precips_12_con <- list.files("data_raw/contemporary_mean_monthly_rainfall", pattern = "\\.tif$", full.names = TRUE)
+# stacking monthly tiffs into annual contemporary raster stack
+temp_con <- rast(temps_12_con)
+precip_con <- rast(precips_12_con) 
+
 
 ################### data exploration - skip for classification ########
 
 # sanity checks 
-nlyr(temp) # checks number of layers
-nlyr(precip) # checks number of layers
-compareGeom(temp, precip) # checks that extent, resolution, and CRS
-global(temp, range, na.rm = TRUE) # temp range in °C 
-global(precip, range, na.rm = TRUE) # precip rainge in mm
+nlyr(temp_leg); nlyr(precip_leg); nlyr(temp_con); nlyr(precip_con) # checks number of layers; should be 12
+compareGeom(temp_leg, precip_leg) # checks that extent, resolution, and CRS match
+compareGeom(temp_con, precip_con)
+compareGeom(temp_leg, temp_con)   # same grid across time periods?
 
-# No biotemperature clipping needed; raw values within 0-30°C range
-
-# Plotting the monthly avgs - just to vizualize 
-plot(temp[[1]], range = c(0, 26), main = "Jan")
-plot(temp[[2]], range = c(0, 26), main = "Feb")
-plot(temp[[3]], range = c(0, 26), main = "Mar")
-plot(temp[[4]], range = c(0, 26), main = "Apr")
-plot(temp[[5]], range = c(0, 26), main = "May")
-plot(temp[[6]], range = c(0, 26), main = "Jun")
-plot(temp[[7]], range = c(0, 26), main = "Jul")
-plot(temp[[8]], range = c(0, 26), main = "Aug")
-plot(temp[[9]], range = c(0, 26), main = "Sep")
-plot(temp[[10]], range = c(0, 26), main = "Oct")
-plot(temp[[11]], range = c(0, 26), main = "Nov")
-plot(temp[[12]], range = c(0, 26), main = "Dec")
-
-plot(precip[[1]], range = c(0, 1000), main = "Jan")
-plot(precip[[2]], range = c(0, 1000), main = "Feb")
-plot(precip[[3]], range = c(0, 1000), main = "Mar")
-plot(precip[[4]], range = c(0, 1000), main = "Apr")
-plot(precip[[5]], range = c(0, 1000), main = "May")
-plot(precip[[6]], range = c(0, 1000), main = "Jun")
-plot(precip[[7]], range = c(0, 1000), main = "Jul")
-plot(precip[[8]], range = c(0, 1000), main = "Aug")
-plot(precip[[9]], range = c(0, 1000), main = "Sep")
-plot(precip[[10]], range = c(0, 1000), main = "Oct")
-plot(precip[[11]], range = c(0, 1000), main = "Nov")
-plot(precip[[12]], range = c(0, 1000), main = "Dec")
+global(temp_leg, range, na.rm = TRUE) # temp range in °C 
+global(precip_leg, range, na.rm = TRUE) # precip rainge in mm
+global(temp_con, range, na.rm = TRUE)
+global(precip_con, range, na.rm = TRUE)
 
 #######################################################################
 
-# macroBiome package Holdridge Life Zones function 
-result1 <- cliHoldridgeGrid(rs.temp = temp, rs.prec = precip)
-plot(result1)
+# LEGACY - macroBiome package Holdridge Life Zones function 
+result1_leg <- cliHoldridgeGrid(rs.temp = temp_leg, rs.prec = precip_leg)
+plot(result1_leg) # result without class labels 
 
-# Dataframe within the package with the labels and number codes
-codes <- vegClsNumCodes
-# simplifying codes to a lookup table
-lookup <- data.frame(
-  ID    = seq_len(nrow(codes)),
-  label = codes$Name.HLZ      
-)
+# CONTEMPORARY
+result1_con <- cliHoldridgeGrid(rs.temp = temp_con, rs.prec = precip_con)
+plot(result1_con) # result without named classes
 
-# making the original output categorical and setting the labels 
-classified <- as.factor(result1)
-levels(classified) <- lookup
+############# Fixing classification and color-code alignment 
 
-# creating a discrete color palette 
-n <- nrow(cats(classified)[[1]])
-cols <- hcl.colors(n, palette = "Dark 3")
+codes  <- vegClsNumCodes
+lookup <- data.frame(ID = seq_len(nrow(codes)), label = codes$Name.HLZ)
 
-# Plotting the improved result 
-plot(classified,
-     col    = cols,
-     plg    = list(cex = 0.6, bg = "white", ncol = 2), 
-     mar    = c(3, 3, 1, 14))
+master_cols <- hcl.colors(nrow(lookup), palette = "Dark 3")
+# Neighboring Holdridge classes get near-identical hues in a sequential palette. 
+# A fixed shuffle makes adjacent classes easier to tell apart:
+set.seed(1); master_cols <- sample(master_cols)
 
+# Helper that classifies, labels, and applies the master colors
+make_hlz <- function(result) {
+  f <- as.factor(result)
+  levels(f) <- lookup
+  coltab(f) <- data.frame(value = lookup$ID, col = master_cols)  
+  f
+}
 
+classified_leg  <- make_hlz(result1_leg)      
+classified_con <- make_hlz(result1_con)  
 
-#export holdridge classifications for Hawaii
+plot(classified_leg,
+     plg = list(cex = 0.6, bg = "white", ncol = 2),
+     mar = c(3, 3, 1, 14))
 
+plot(classified_con,
+     plg = list(cex = 0.6, bg = "white", ncol = 2),
+     mar = c(3, 3, 1, 14))
 
-#output_data folder was created after and it was moved 
+   save_hlz_plot <- function(r, file) {
+  png(file,
+      width = 10, height = 5.625,   # inches, 16:9 (matches a 13.33 x 7.5 in slide when scaled)
+      units = "in", res = 300,
+      bg = "white")
+  plot(r,
+       plg = list(cex = 0.9, bg = "white"),  # bigger legend text for slides
+       mar = c(3, 3, 1, 14),
+       cex.axis = 1.1)
+  dev.off()
+}
 
-####################################################################
-#Contemporary Data used here 
-
-temp_con <- list.files("data_raw/contemporary_mean_monthly_air_temperature", pattern = "\\.tif$", full.names = TRUE)
-precip_con <- list.files("data_raw/contemporary_mean_monthly_rainfall", pattern = "\\.tif$", full.names = TRUE)
-
-temp2 <- rast(temp_con)
-precip2 <- rast(precip_con) 
-
-###
-result1_con <- cliHoldridgeGrid(rs.temp = temp2, rs.prec = precip2)
-plot(result1_con)
-
-# Dataframe within the package with the labels and number codes
-codes <- vegClsNumCodes
-# simplifying codes to a lookup table
-lookup <- data.frame(
-  ID    = seq_len(nrow(codes)),
-  label = codes$Name.HLZ      
-)
-
-classified2 <- as.factor(result1_con)
-levels(classified2) <- lookup
-
-n <- nrow(cats(classified2)[[1]])
-cols <- hcl.colors(n, palette = "Dark 3")
-
-plot(classified2,
-     col    = cols,
-     plg    = list(cex = 0.6, bg = "white", ncol = 2), 
-     mar    = c(3, 3, 1, 14))
-
-
+save_hlz_plot(classified_leg,  "holdridge_legacy_map.png")
+save_hlz_plot(classified_con, "holdridge_contemporary_map.png")
