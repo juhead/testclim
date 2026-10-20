@@ -83,3 +83,13 @@ hold_islands <- full_join(hist_hold_islands, contemp_hold_islands, by
 
 hold_islands <- hold_islands %>%
   mutate(across(.cols = everything(), .fns = function(x) ifelse(is.na(x), 0, x)))
+
+#difference in area covered historical versus contemporary 
+hold_islands <- hold_islands %>% mutate("difference (contemp-hist)" = 
+                                          pct_island_contemp - pct_island_hist)
+hold_islands <- hold_islands %>% mutate("difference (hist-contemp)" = 
+                                          pct_island_hist - pct_island_contemp)
+
+#export data to csv 
+write.csv(hold_islands, "output_data/holdridge_island_breakdown.csv", 
+          row.names = FALSE)
