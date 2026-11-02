@@ -21,71 +21,53 @@ library(tidyterra)
 library(purrr)
 library(paletteer)
 
-#import holdridge classification created for hawaii created previously 
-hold_class <- rast("output_data/historical_holdridge_hawaii.tiff")
-
-# creating a discrete color palette 
-n <- nrow(cats(hold_class)[[1]])
-cols <- hcl.colors(n, palette = "Dark 3")
-
-#plot holdridge zones for the islands 
-plot(hold_class,
-     col    = cols,
-     plg    = list(cex = 0.6, bg = "white"), 
-     mar    = c(3, 3, 1, 1))
+########################### LOADING DATA ########################
+#import holdridge classification 
+hist_hold <- rast("output_data/historical_holdridge_hawaii.tiff")
+contemp_hold <- rast("output_data/contemporary_holdridge_hawaii.tiff")
 
 #import island boundaries 
-islands <- read_sf("data_raw/dems_coast/dems/coast/coast_geo_shp.shp")
+islands <- read_sf("data_raw/hawaii_coastline_WGS84_shp/coastline_hawaii_WGS84.shp")
 
-ggplot(islands) +
-  geom_sf(aes(fill = factor(COAST_GEO_))) +
-  labs(
-    fill = "Island ID",
-  ) +
-  scale_fill_paletteer_d("MetBrewer::Signac")
+
+########################### CHECK CRS ########################
 #check the coordinate reference systems for both 
-crs(hold_class, describe = TRUE)
+crs(hist_hold, describe = TRUE)
+crs(contemp_hold, describe = TRUE)
 st_crs(islands)
 
-hold_class_NAD83 <- project(hold_class, "EPSG:4269", method = "near")
-crs(hold_class_NAD83, describe = TRUE)
-
-island_names <- read_sf("data_raw/Coastline.geojson")
-island_names <- st_transform(island_names, crs = st_crs(islands))
-st_crs(island_names)
-
-#join islands to data with island names (not using yet)
-islands_w_names <- st_join(islands, island_names, join = st_intersects)
-plot(st_geometry(islands_w_names))
-
-#calculate area in meters squared for islands 
-islands$calc_area <- as.numeric(st_area(islands))
-
-#calculate area covered by the different zones by the island 
-island_areas <- islands |>
-  mutate(calc_area = as.numeric(st_area(geometry))) |>   # use your geometry column name if it differs
-  st_drop_geometry() |>
-  select(COAST_GEO_, calc_area)
-
-island_zones <- exact_extract(
-  hold_class_NAD83, islands,
+########################### AREA CALCUALTION ########################
+#area calculation zones historical 
+hist_hold_islands <- exact_extract(
+  hist_hold, islands,
   function(df) {
     df |>
       filter(!is.na(value)) |>
-      group_by(value, COAST_GEO_) |>
-      summarise(area = sum(coverage_area), .groups = "drop")
+      group_by(value, Name, area_sq_km) |>
+      summarise(area_hist = (sum(coverage_area) / 1e6), .groups = "drop") |>
+      mutate(pct_island_hist = 100 * (area_hist  / area_sq_km))
   },
   coverage_area = TRUE,
-  include_cols = "COAST_GEO_",
+  include_cols = c("Name", "area_sq_km"),
   summarize_df = TRUE
-) |>
-  left_join(island_areas, by = "COAST_GEO_") |>
-  mutate(percent_island = 100 * area / calc_area)
+)
 
-island_totals <- island_zones |>
-  group_by(COAST_GEO_) |>
-  summarise(total_percent = sum(percent_island), .groups = "drop")
+#area calculation zones contemporary 
+contemp_hold_islands <- exact_extract(
+  contemp_hold, islands,
+  function(df) {
+    df |>
+      filter(!is.na(value)) |>
+      group_by(value, Name, area_sq_km) |>
+      summarise(area_contemp = (sum(coverage_area) / 1e6), .groups = "drop") |>
+      mutate(pct_island_contemp = 100 * (area_contemp  / area_sq_km))
+  },
+  coverage_area = TRUE,
+  include_cols = c("Name", "area_sq_km"),
+  summarize_df = TRUE
+)
 
+########################### ZONE NAMES ########################
 #get codes from macroBiome
 codes <- vegClsNumCodes
 
@@ -95,60 +77,36 @@ lookup <- data.frame(
 )
 
 #assign names of zones to table 
-island_zones <- left_join(island_zones, lookup, by = c("value" = "ID"))
+hist_hold_islands <- left_join(hist_hold_islands, lookup, by = c("value" = "ID"))
+contemp_hold_islands <- left_join(contemp_hold_islands, lookup, by = c("value" = "ID"))
 
-#assign island names using islands_w_names (created above)
-island_lookup <- islands_w_names |>
-  st_drop_geometry() |>
-  distinct(COAST_GEO_, isle)
+########################### COMBINE AND COMPARE ########################
+#join together contemporary and historical tables 
+hold_islands <- full_join(hist_hold_islands, contemp_hold_islands, by 
+                          = c("value", "Name", "area_sq_km", "label"))
+hold_islands <- hold_islands %>% 
+  mutate(across(c(area_hist, area_contemp, pct_island_hist, pct_island_contemp), 
+                ~ replace_na(.x, 0)))
 
-island_zones <- island_zones %>% left_join(island_lookup, by = "COAST_GEO_", 
-                                           relationship = "many-to-one")
+#difference (contemporary - legacy)
+hold_islands <- hold_islands %>% 
+  mutate("diff(contemp-legacy)" = pct_island_contemp - pct_island_hist)
 
-#seems like the names don't exactly work so we will need to come back to that
-#create separate dataframes for each island id
-split_island_zones <- split(island_zones, f = island_zones$COAST_GEO_)
+#change type 
+hold_islands <- hold_islands %>%
+  mutate(change_type = case_when(
+    `diff(contemp-legacy)` < 0 ~ "LOSS",
+    `diff(contemp-legacy)` > 0 ~ "GAIN",
+    `diff(contemp-legacy)` == 0 ~ "NO CHANGE"
+  ))
 
-#color scheme for classifications
-all_classes <- sort(unique(island_zones$label))
-n  <- length(all_classes)
-cols <- setNames(hcl.colors(n, palette = "Dark 3"), as.character(all_classes))
+########################### EXPORT TO CSV ########################
+write.csv(hold_islands, "output_data/holdridge_island_breakdown.csv", 
+          row.names = FALSE)
 
-#graphing percent of island covered by each type 
-plots <- imap(split_island_zones, function(df, id) {
-  ggplot(df, aes(x = factor(label), y = percent_island, fill = label)) +
-    geom_col() +
-    labs(
-      title = paste("Island", id),
-      x = "Class",
-      y = "% of island area"
-    ) +
-    scale_fill_manual(values = cols, drop = FALSE, name = "Class") +
-    scale_x_discrete(drop = FALSE) +
-    theme_minimal() +
-    coord_flip()
-})
-plots[[3]]
 
-#making pie charts for each island 
-plots_pie <- imap(split_island_zones, function(df, id) {
-  ggplot(df, aes(x = "", y = percent_island, fill = label)) +
-    geom_bar(width = 1, stat = "identity") +
-    coord_polar("y", start = 0) +
-    labs(
-      title = paste("Island", id),
-      x = "Class",
-      y = "% of island area"
-    ) +
-    scale_fill_manual(values = cols, drop = FALSE, name = "Class") +
-    scale_x_discrete(drop = FALSE) +
-    theme_void()
-})
 
-plots_pie[[2]]
 
-#used to export piecharts relating to distribution of Holdridge classifications
-iwalk(plots_pie, function(p, id) {
-  ggsave(paste0("island_", id, ".png"), p, width = 6, height = 4, dpi = 300)
-})
+
+
 
