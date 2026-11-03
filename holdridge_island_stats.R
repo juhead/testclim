@@ -5,10 +5,8 @@ install.packages("tidyr")
 install.packages("dplyr")
 install.packages("exactextractr")
 install.packages("macroBiome")
-install.packages("ggplot2")
 install.packages("tidyterra")
 install.packages("purrr")
-install.packages("paletteer")
 
 library(sf)
 library(terra)
@@ -16,10 +14,8 @@ library(dplyr)
 library(tidyr)
 library(exactextractr)
 library(macroBiome)
-library(ggplot2)
 library(tidyterra)
 library(purrr)
-library(paletteer)
 
 ########################### LOADING DATA ########################
 #import holdridge classification 
@@ -77,8 +73,10 @@ lookup <- data.frame(
 )
 
 #assign names of zones to table 
-hist_hold_islands <- left_join(hist_hold_islands, lookup, by = c("value" = "ID"))
-contemp_hold_islands <- left_join(contemp_hold_islands, lookup, by = c("value" = "ID"))
+hist_hold_islands <- left_join(hist_hold_islands, lookup, 
+                               by = c("value" = "ID"))
+contemp_hold_islands <- left_join(contemp_hold_islands, lookup, 
+                                  by = c("value" = "ID"))
 
 ########################### COMBINE AND COMPARE ########################
 #join together contemporary and historical tables 
