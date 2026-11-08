@@ -1,10 +1,9 @@
-## This script is for reviewing holdridge level 1 audebert classifications by island 
+## This script is for calculating area by Holdridge Audebert level 1 classifications for each island
 install.packages("sf")
 install.packages("terra")
 install.packages("tidyr")
 install.packages("dplyr")
 install.packages("exactextractr")
-install.packages("macroBiome")
 install.packages("tidyterra")
 install.packages("purrr")
 
@@ -13,7 +12,6 @@ library(terra)
 library(dplyr)
 library(tidyr)
 library(exactextractr)
-library(macroBiome)
 library(tidyterra)
 library(purrr)
 
