@@ -53,4 +53,4 @@ all_columns <- list(statewide, kauai, oahu, molokai, maui, lanai, hawaii)
 t1 <- all_columns %>% 
   reduce(left_join, by = "Label")
 
-write.csv(t1, "output_data/table2_area_results_holdridge", row.names = FALSE)
+write.csv(t1, "output_data/table2_area_results_holdridge.csv", row.names = FALSE)
