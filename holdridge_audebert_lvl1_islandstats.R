@@ -1,18 +1,14 @@
 ## This script is for calculating area by Holdridge Audebert level 1 classifications for each island
 install.packages("sf")
 install.packages("terra")
-install.packages("tidyr")
 install.packages("dplyr")
 install.packages("exactextractr")
 install.packages("tidyterra")
-install.packages("purrr")
 
 library(sf)
 library(terra)
 library(dplyr)
-library(tidyr)
 library(exactextractr)
-library(tidyterra)
 library(purrr)
 
 ########################### LOADING DATA ########################
