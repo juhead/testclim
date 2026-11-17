@@ -58,8 +58,9 @@ contemp_hold_islands <- exact_extract(
 )
 
 ########################### ZONE NAMES ########################
-#add in lookup table for audebert level 1 classifcation 
-audebert_lvl1_lookup <- read.csv("output_data/holdridge_audebert_lvl1_class/holdridge_audebert_lvl1_lookup.csv")
+#add in lookup table for audebert level 1 classification 
+audebert_lvl1_lookup <- read.csv(
+  "output_data/holdridge_audebert_lvl1_class/holdridge_audebert_lvl1_lookup.csv")
 
 #assign names of zones to table 
 hist_hold_islands <- left_join(hist_hold_islands, audebert_lvl1_lookup, 

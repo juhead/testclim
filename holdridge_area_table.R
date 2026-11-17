@@ -1,3 +1,4 @@
+#this is a script to create a table of holdridge area for paper
 #load required packages 
 install.packages("tidyverse")
 install.packages("readxl")
@@ -7,6 +8,7 @@ library(tidyverse)
 library(readxl)
 library(dplyr)
 
+########################### LOADING DATA ########################
 #read in files 
 statewide <- read_excel("output_data/holdridge_lvl1_stats.xlsx", sheet = 1)
 oahu <- read_excel("output_data/holdridge_lvl1_stats.xlsx", sheet = 2)
@@ -25,6 +27,7 @@ lanai <- lanai %>% mutate(across(where(is.numeric), round, digits = 2))
 kauai <- kauai %>% mutate(across(where(is.numeric), round, digits = 2))
 hawaii <- hawaii %>% mutate(across(where(is.numeric), round, digits = 2))
 
+########################### TABLE CONVERSION ########################
 #writing function 
 format_stats <- function(polygon, column) {
   polygon %>% 
@@ -38,7 +41,7 @@ format_stats_islands <- function(polygon, column) {
     select(Label, {{ column }})
 }
 
-# flow 
+#format stats   
 statewide <- format_stats(polygon = statewide, column = "Statewide")
 kauai <- format_stats_islands(polygon = kauai, column = "Kaua'i")
 oahu <- format_stats_islands(polygon = oahu, column = "O'ahu")
@@ -47,10 +50,13 @@ maui <- format_stats_islands(polygon = maui, column = "Maui")
 lanai <- format_stats_islands(polygon = lanai, column = "Lana'i")
 hawaii <- format_stats_islands(polygon = hawaii, column = "Hawai'i")
 
-# export
+########################### EXPORTING ########################
+#list all islands 
 all_columns <- list(statewide, kauai, oahu, molokai, maui, lanai, hawaii)
 
-t1 <- all_columns %>% 
+#join together by holdridge climate class
+t2 <- all_columns %>% 
   reduce(left_join, by = "Label")
 
-write.csv(t1, "output_data/table2_area_results_holdridge.csv", row.names = FALSE)
+#export csv 
+write.csv(t2, "output_data/table2_area_results_holdridge.csv", row.names = FALSE)
