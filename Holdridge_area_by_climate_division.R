@@ -78,7 +78,7 @@ all_columns <- list(climdiv1, climdiv2, climdiv3, climdiv4, climdiv5, climdiv6,
 
 #join together by holdridge climate class
 climate_div_hold_areas <- all_columns %>% 
-  reduce(left_join, by = "Label")
+  reduce(full_join, by = "Label")
 
 #export csv 
 write.csv(climate_div_hold_areas, 

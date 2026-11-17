@@ -56,7 +56,7 @@ all_columns <- list(statewide, kauai, oahu, molokai, maui, lanai, hawaii)
 
 #join together by holdridge climate class
 t2 <- all_columns %>% 
-  reduce(left_join, by = "Label")
+  reduce(full_join, by = "Label")
 
 #export csv 
 write.csv(t2, "output_data/table2_area_results_holdridge.csv", row.names = FALSE)
