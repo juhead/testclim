@@ -10,13 +10,13 @@ library(dplyr)
 
 ########################### LOADING DATA ########################
 #read in files 
-statewide <- read_excel("output_data/holdridge_lvl1_stats.xlsx", sheet = 1)
-oahu <- read_excel("output_data/holdridge_lvl1_stats.xlsx", sheet = 2)
-molokai <- read_excel("output_data/holdridge_lvl1_stats.xlsx", sheet = 3)
-maui <- read_excel("output_data/holdridge_lvl1_stats.xlsx", sheet = 4)
-lanai <- read_excel("output_data/holdridge_lvl1_stats.xlsx", sheet = 5)
-kauai <- read_excel("output_data/holdridge_lvl1_stats.xlsx", sheet = 6)
-hawaii <- read_excel("output_data/holdridge_lvl1_stats.xlsx", sheet = 7)
+statewide <- read_excel("output_data/contemporary_holdridge_area_NEW.xlsx", sheet = 1)
+oahu <- read_excel("output_data/contemporary_holdridge_area_NEW.xlsx", sheet = 2)
+molokai <- read_excel("output_data/contemporary_holdridge_area_NEW.xlsx", sheet = 3)
+maui <- read_excel("output_data/contemporary_holdridge_area_NEW.xlsx", sheet = 4)
+lanai <- read_excel("output_data/contemporary_holdridge_area_NEW.xlsx", sheet = 5)
+kauai <- read_excel("output_data/contemporary_holdridge_area_NEW.xlsx", sheet = 6)
+hawaii <- read_excel("output_data/contemporary_holdridge_area_NEW.xlsx", sheet = 7)
 
 #rounding values
 statewide <- statewide %>% mutate(across(where(is.numeric), round, digits = 2))
@@ -31,14 +31,14 @@ hawaii <- hawaii %>% mutate(across(where(is.numeric), round, digits = 2))
 #writing function 
 format_stats <- function(polygon, column) {
   polygon %>% 
-    mutate({{ column }} := paste0(area_contemp, " (", pct_contemp, ")")) %>% 
-    select(Label, {{ column }})
+    mutate({{ column }} := paste0(area_contemp, " (", pct_state_contemp, ")")) %>% 
+    select(label, {{ column }})
 }
 
 format_stats_islands <- function(polygon, column) {
   polygon %>% 
-    mutate({{ column }} := paste0(area_contemp, " (", pct_island_contemp, ")")) %>% 
-    select(Label, {{ column }})
+    mutate({{ column }} := paste0(area_contemp, " (", pct_contemp, ")")) %>% 
+    select(label, {{ column }})
 }
 
 #format stats   
@@ -56,7 +56,7 @@ all_columns <- list(statewide, kauai, oahu, molokai, maui, lanai, hawaii)
 
 #join together by holdridge climate class
 t2 <- all_columns %>% 
-  reduce(full_join, by = "Label")
+  reduce(full_join, by = "label")
 
 #export csv 
-write.csv(t2, "output_data/table2_area_results_holdridge.csv", row.names = FALSE)
+write.csv(t2, "output_data/table2_area_results_holdridge_NEW.csv", row.names = FALSE)

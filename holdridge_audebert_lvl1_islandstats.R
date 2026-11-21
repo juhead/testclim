@@ -1,10 +1,4 @@
 ## This script is for calculating area by Holdridge Audebert level 1 classifications for each island
-install.packages("sf")
-install.packages("terra")
-install.packages("dplyr")
-install.packages("exactextractr")
-install.packages("tidyterra")
-
 library(sf)
 library(terra)
 library(dplyr)
@@ -22,40 +16,38 @@ islands <- read_sf("data_raw/hawaii_coastline_WGS84_shp/coastline_hawaii_WGS84.s
 
 ########################### CHECK CRS ########################
 #check the coordinate reference systems for both 
-crs(hist_hold, describe = TRUE)
-crs(contemp_hold, describe = TRUE)
-st_crs(islands)
+stopifnot(
+  "Historical and contemporary rasters have different CRS" =
+    same.crs(hist_hold, contemp_hold),
+  "Island boundaries and rasters have different CRS" =
+    same.crs(hist_hold, vect(islands))
+)
 
 ########################### AREA CALCUALTION ########################
+summarize_zone_area <- function(data, islands, suffix) {
+  out <- exact_extract( 
+    data, islands,
+    function(df) {
+      df |>
+        filter(!is.na(value)) |>
+        group_by(value, Name, area_sq_km) |>
+        summarise(area = sum(coverage_area) / 1e6, .groups = "drop") |>
+        mutate(pct_island = 100 * area / area_sq_km)
+    },
+    coverage_area = TRUE,
+    include_cols  = c("Name", "area_sq_km"),
+    summarize_df  = TRUE
+  )
+  
+  rename(out,
+         "area_{suffix}" := area,
+         "pct_island_{suffix}" := pct_island)
+}
 #area calculation zones historical 
-hist_hold_islands <- exact_extract(
-  hist_hold, islands,
-  function(df) {
-    df |>
-      filter(!is.na(value)) |>
-      group_by(value, Name, area_sq_km) |>
-      summarise(area_hist = (sum(coverage_area) / 1e6), .groups = "drop") |>
-      mutate(pct_island_hist = 100 * (area_hist  / area_sq_km))
-  },
-  coverage_area = TRUE,
-  include_cols = c("Name", "area_sq_km"),
-  summarize_df = TRUE
-)
+hist_hold_islands <- summarize_zone_area(hist_hold, islands, "hist")
 
 #area calculation zones contemporary 
-contemp_hold_islands <- exact_extract(
-  contemp_hold, islands,
-  function(df) {
-    df |>
-      filter(!is.na(value)) |>
-      group_by(value, Name, area_sq_km) |>
-      summarise(area_contemp = (sum(coverage_area) / 1e6), .groups = "drop") |>
-      mutate(pct_island_contemp = 100 * (area_contemp  / area_sq_km))
-  },
-  coverage_area = TRUE,
-  include_cols = c("Name", "area_sq_km"),
-  summarize_df = TRUE
-)
+contemp_hold_islands <- summarize_zone_area(contemp_hold, islands, "contemp")
 
 ########################### ZONE NAMES ########################
 #add in lookup table for audebert level 1 classification 
