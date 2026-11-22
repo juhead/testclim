@@ -46,8 +46,7 @@ summarize_zone_area <- function(data, summary, name, area_sqkm, suffix) {
     rename(Name = zone_name,
            area_sq_km = zone_area,
            !!paste0("area_", suffix) := area,
-           !!paste0("pct_",  suffix) := pct_zone)
-}
+           !!paste0("pct_",  suffix) := pct_zone)}
 # Summarize state area function
 summarize_state_area <- function(data, state, suffix) {
   out <- exact_extract( 
